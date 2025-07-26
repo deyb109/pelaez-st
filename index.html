@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Particle Love</title>
+  <title>Cheng</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: #000;
+      background: black;
       overflow: hidden;
+      font-family: sans-serif;
     }
     canvas {
       display: block;
@@ -17,131 +18,114 @@
   </style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
+<canvas id="loveCanvas"></canvas>
+<script>
+const canvas = document.getElementById("loveCanvas");
+const ctx = canvas.getContext("2d");
 
-  <script>
-    const canvas = document.getElementById('canvas')
-    const ctx = canvas.getContext('2d')
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+let width, height;
+let particles = [];
+let heartCoords = [];
+let text = "I LOVE YOU SMITCHES";
+let clicked = 0;
+let maxClick = 3;
 
-    const colors = ['#8e44ad', '#3498db', '#ff69b4']
-    let clickCount = 0
-    let particles = []
-    let showParticles = false
+function resize() {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
 
-    class Particle {
-      constructor(x, y) {
-        this.x = Math.random() * canvas.width
-        this.y = Math.random() * canvas.height
-        this.tx = x
-        this.ty = y
-        this.size = 2
-        this.color = colors[Math.floor(Math.random() * colors.length)]
-      }
+function getHeartCoords(scale = 10) {
+  let coords = [];
+  for (let t = 0; t < Math.PI * 2; t += 0.05) {
+    let x = scale * 16 * Math.pow(Math.sin(t), 3);
+    let y = -scale * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+    coords.push({ x, y });
+  }
+  return coords;
+}
 
-      update() {
-        const dx = this.tx - this.x
-        const dy = this.ty - this.y
-        this.x += dx * 0.05
-        this.y += dy * 0.05
-      }
+function createTextParticles() {
+  const tempCanvas = document.createElement("canvas");
+  const tempCtx = tempCanvas.getContext("2d");
+  tempCanvas.width = width;
+  tempCanvas.height = height;
 
-      draw() {
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
-        ctx.fillStyle = this.color
-        ctx.fill()
+  tempCtx.font = "bold 50px sans-serif";
+  tempCtx.fillStyle = "white";
+  tempCtx.textAlign = "center";
+  tempCtx.fillText(text, width / 2, height / 2);
+
+  const imgData = tempCtx.getImageData(0, 0, width, height);
+  for (let y = 0; y < height; y += 5) {
+    for (let x = 0; x < width; x += 5) {
+      let index = (y * width + x) * 4;
+      if (imgData.data[index + 3] > 128) {
+        particles.push(new Particle(x, y));
       }
     }
+  }
+}
 
-    function getTextCoordinates(text) {
-      const tempCanvas = document.createElement('canvas')
-      const tempCtx = tempCanvas.getContext('2d')
-      tempCanvas.width = canvas.width
-      tempCanvas.height = canvas.height
+function createHeartParticles() {
+  heartCoords = getHeartCoords(15);
+  const centerX = width / 2;
+  const centerY = height / 2;
 
-      tempCtx.font = "bold 80px Arial"
-      tempCtx.fillStyle = "#ffffff"
-      tempCtx.textAlign = "center"
-      tempCtx.fillText(text, canvas.width / 2, canvas.height / 2)
+  for (let i = 0; i < heartCoords.length; i++) {
+    let x = heartCoords[i].x + centerX;
+    let y = heartCoords[i].y + centerY;
+    particles.push(new Particle(x, y));
+  }
+}
 
-      const textData = tempCtx.getImageData(0, 0, canvas.width, canvas.height)
+class Particle {
+  constructor(x, y) {
+    this.x = Math.random() * width;
+    this.y = Math.random() * height;
+    this.tx = x;
+    this.ty = y;
+    this.size = 2 + Math.random() * 2;
+    this.color = ["#ff77ff", "#77aaff", "#cc66ff"][Math.floor(Math.random() * 3)];
+    this.vx = (Math.random() - 0.5) * 10;
+    this.vy = (Math.random() - 0.5) * 10;
+  }
 
-      const coords = []
-      for (let y = 0; y < textData.height; y += 6) {
-        for (let x = 0; x < textData.width; x += 6) {
-          const index = (y * textData.width + x) * 4
-          if (textData.data[index + 3] > 128) {
-            coords.push({ x, y })
-          }
-        }
-      }
+  update() {
+    this.x += (this.tx - this.x) * 0.05;
+    this.y += (this.ty - this.y) * 0.05;
+  }
 
-      return coords
-    }
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.fillStyle = this.color;
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
 
-    function getHeartCoordinates(centerX, centerY, r, count) {
-      const coords = []
-      for (let i = 0; i < count; i++) {
-        const t = Math.random() * Math.PI * 2
-        const x = centerX + 16 * Math.pow(Math.sin(t), 3) * r
-        const y = centerY - (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * r
-        coords.push({ x, y })
-      }
-      return coords
-    }
+function animate() {
+  ctx.clearRect(0, 0, width, height);
+  for (let p of particles) {
+    p.update();
+    p.draw(ctx);
+  }
+  requestAnimationFrame(animate);
+}
+animate();
 
-    function generateParticles() {
-      particles = []
-
-      // Text particles
-      const textCoords = getTextCoordinates("I LOVE YOU SMITCHES")
-      textCoords.forEach(pos => particles.push(new Particle(pos.x, pos.y)))
-
-      // Heart beside "Smitches"
-      const heartCoords = getHeartCoordinates(canvas.width / 2 + 280, canvas.height / 2 - 40, 12, 300)
-      heartCoords.forEach(pos => particles.push(new Particle(pos.x, pos.y)))
-    }
-
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      if (showParticles) {
-        for (let i = 0; i < particles.length; i++) {
-          particles[i].update()
-          particles[i].draw()
-        }
-      } else {
-        for (let i = 0; i < 150; i++) {
-          ctx.beginPath()
-          ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 2, 0, Math.PI * 2)
-          ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)]
-          ctx.fill()
-        }
-      }
-
-      requestAnimationFrame(animate)
-    }
-
-    canvas.addEventListener('click', () => {
-      clickCount++
-      if (clickCount === 3) {
-        showParticles = true
-        generateParticles()
-      }
-    })
-
-    animate()
-
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-      if (showParticles) {
-        generateParticles()
-      }
-    })
-  </script>
+canvas.addEventListener("click", () => {
+  clicked++;
+  if (clicked === maxClick) {
+    particles = [];
+    createHeartParticles();
+    createTextParticles();
+  }
+});
+</script>
 </body>
 </html>
+
 
