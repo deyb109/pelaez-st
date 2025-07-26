@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>I Love You Smitches</title>
+  <title>Particle Love</title>
   <style>
     html, body {
       margin: 0;
@@ -25,11 +25,10 @@
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
+    const colors = ['#8e44ad', '#3498db', '#ff69b4']
     let clickCount = 0
     let particles = []
-    let showText = false
-
-    const colors = ['#8e44ad', '#3498db', '#ff69b4']
+    let showParticles = false
 
     class Particle {
       constructor(x, y) {
@@ -56,52 +55,64 @@
       }
     }
 
-    function createTextAndHeartParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    function getTextCoordinates(text) {
+      const tempCanvas = document.createElement('canvas')
+      const tempCtx = tempCanvas.getContext('2d')
+      tempCanvas.width = canvas.width
+      tempCanvas.height = canvas.height
 
-      // Create text particles
-      ctx.font = "bold 80px Outfit, sans-serif"
-      ctx.fillStyle = "#ffffff"
-      ctx.textAlign = "center"
-      ctx.fillText("I LOVE YOU SMITCHES", canvas.width / 2, canvas.height / 2)
+      tempCtx.font = "bold 80px Arial"
+      tempCtx.fillStyle = "#ffffff"
+      tempCtx.textAlign = "center"
+      tempCtx.fillText(text, canvas.width / 2, canvas.height / 2)
 
-      const textData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      const textData = tempCtx.getImageData(0, 0, canvas.width, canvas.height)
 
+      const coords = []
       for (let y = 0; y < textData.height; y += 6) {
         for (let x = 0; x < textData.width; x += 6) {
           const index = (y * textData.width + x) * 4
           if (textData.data[index + 3] > 128) {
-            particles.push(new Particle(x, y))
+            coords.push({ x, y })
           }
         }
       }
 
-      // Add heart made of particles to the right of "SMITCHES"
-      const centerX = canvas.width / 2 + 280
-      const centerY = canvas.height / 2 - 40
-      const heartParticles = 300
+      return coords
+    }
 
-      for (let i = 0; i < heartParticles; i++) {
+    function getHeartCoordinates(centerX, centerY, r, count) {
+      const coords = []
+      for (let i = 0; i < count; i++) {
         const t = Math.random() * Math.PI * 2
-        const r = 12
-
         const x = centerX + 16 * Math.pow(Math.sin(t), 3) * r
         const y = centerY - (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * r
-
-        particles.push(new Particle(x, y))
+        coords.push({ x, y })
       }
+      return coords
+    }
+
+    function generateParticles() {
+      particles = []
+
+      // Text particles
+      const textCoords = getTextCoordinates("I LOVE YOU SMITCHES")
+      textCoords.forEach(pos => particles.push(new Particle(pos.x, pos.y)))
+
+      // Heart beside "Smitches"
+      const heartCoords = getHeartCoordinates(canvas.width / 2 + 280, canvas.height / 2 - 40, 12, 300)
+      heartCoords.forEach(pos => particles.push(new Particle(pos.x, pos.y)))
     }
 
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      if (showText) {
+      if (showParticles) {
         for (let i = 0; i < particles.length; i++) {
           particles[i].update()
           particles[i].draw()
         }
       } else {
-        // Pre-click sparkle
         for (let i = 0; i < 150; i++) {
           ctx.beginPath()
           ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 2, 0, Math.PI * 2)
@@ -116,9 +127,8 @@
     canvas.addEventListener('click', () => {
       clickCount++
       if (clickCount === 3) {
-        showText = true
-        particles = []
-        createTextAndHeartParticles()
+        showParticles = true
+        generateParticles()
       }
     })
 
@@ -127,11 +137,11 @@
     window.addEventListener('resize', () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      if (showText) {
-        particles = []
-        createTextAndHeartParticles()
+      if (showParticles) {
+        generateParticles()
       }
     })
   </script>
 </body>
 </html>
+
