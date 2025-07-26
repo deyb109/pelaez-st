@@ -8,114 +8,130 @@
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden;
       background: #000;
+      overflow: hidden;
     }
-
     canvas {
       display: block;
-    }
-
-    #loveText {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0);
-      font-size: 3rem;
-      color: white;
-      font-family: 'Outfit', sans-serif;
-      opacity: 0;
-      animation: showLove 2s ease-in-out forwards;
-    }
-
-    @keyframes showLove {
-      0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0);
-      }
-      100% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-      }
     }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <div id="loveText" style="display: none;">I LOVE YOU SMITCHES 💙💜💖</div>
 
   <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    let clickCount = 0;
-    let showLove = false;
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    let clickCount = 0
+    let particles = []
+    let showText = false
 
-    const colors = ['#8e44ad', '#3498db', '#ff69b4'];
+    const colors = ['#8e44ad', '#3498db', '#ff69b4']
 
     class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 3 + 1;
-        this.color = colors[Math.floor(Math.random() * colors.length)];
-        this.speedX = Math.random() * 2 - 1;
-        this.speedY = Math.random() * 2 - 1;
+      constructor(x, y) {
+        this.x = Math.random() * canvas.width
+        this.y = Math.random() * canvas.height
+        this.tx = x
+        this.ty = y
+        this.size = 2
+        this.color = colors[Math.floor(Math.random() * colors.length)]
       }
 
       update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-
-        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+        const dx = this.tx - this.x
+        const dy = this.ty - this.y
+        this.x += dx * 0.05
+        this.y += dy * 0.05
       }
 
       draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
+        ctx.beginPath()
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+        ctx.fillStyle = this.color
+        ctx.fill()
       }
     }
 
-    function initParticles() {
-      for (let i = 0; i < 200; i++) {
-        particles.push(new Particle());
+    function createTextAndHeartParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // Create text particles
+      ctx.font = "bold 80px Outfit, sans-serif"
+      ctx.fillStyle = "#ffffff"
+      ctx.textAlign = "center"
+      ctx.fillText("I LOVE YOU SMITCHES", canvas.width / 2, canvas.height / 2)
+
+      const textData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+      for (let y = 0; y < textData.height; y += 6) {
+        for (let x = 0; x < textData.width; x += 6) {
+          const index = (y * textData.width + x) * 4
+          if (textData.data[index + 3] > 128) {
+            particles.push(new Particle(x, y))
+          }
+        }
+      }
+
+      // Add heart made of particles to the right of "SMITCHES"
+      const centerX = canvas.width / 2 + 280
+      const centerY = canvas.height / 2 - 40
+      const heartParticles = 300
+
+      for (let i = 0; i < heartParticles; i++) {
+        const t = Math.random() * Math.PI * 2
+        const r = 12
+
+        const x = centerX + 16 * Math.pow(Math.sin(t), 3) * r
+        const y = centerY - (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * r
+
+        particles.push(new Particle(x, y))
       }
     }
 
-    function animateParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      for (let i = 0; i < particles.length; i++) {
-        particles[i].update();
-        particles[i].draw();
+      if (showText) {
+        for (let i = 0; i < particles.length; i++) {
+          particles[i].update()
+          particles[i].draw()
+        }
+      } else {
+        // Pre-click sparkle
+        for (let i = 0; i < 150; i++) {
+          ctx.beginPath()
+          ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 2, 0, Math.PI * 2)
+          ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)]
+          ctx.fill()
+        }
       }
 
-      requestAnimationFrame(animateParticles);
+      requestAnimationFrame(animate)
     }
 
     canvas.addEventListener('click', () => {
-      clickCount++;
-      if (clickCount === 3 && !showLove) {
-        document.getElementById('loveText').style.display = 'block';
-        showLove = true;
+      clickCount++
+      if (clickCount === 3) {
+        showText = true
+        particles = []
+        createTextAndHeartParticles()
       }
-    });
+    })
 
-    initParticles();
-    animateParticles();
+    animate()
 
     window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      particles = [];
-      initParticles();
-    });
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+      if (showText) {
+        particles = []
+        createTextAndHeartParticles()
+      }
+    })
   </script>
 </body>
 </html>
