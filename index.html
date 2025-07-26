@@ -53,14 +53,14 @@ function createTextParticles() {
   tempCanvas.width = width;
   tempCanvas.height = height;
 
-  tempCtx.font = "bold 50px sans-serif";
+  tempCtx.font = "bold 45px sans-serif";
   tempCtx.fillStyle = "white";
   tempCtx.textAlign = "center";
   tempCtx.fillText(text, width / 2, height / 2);
 
   const imgData = tempCtx.getImageData(0, 0, width, height);
-  for (let y = 0; y < height; y += 5) {
-    for (let x = 0; x < width; x += 5) {
+  for (let y = 0; y < height; y += 6) {
+    for (let x = 0; x < width; x += 6) {
       let index = (y * width + x) * 4;
       if (imgData.data[index + 3] > 128) {
         particles.push(new Particle(x, y));
@@ -70,9 +70,9 @@ function createTextParticles() {
 }
 
 function createHeartParticles() {
-  heartCoords = getHeartCoords(15);
+  heartCoords = getHeartCoords(16);
   const centerX = width / 2;
-  const centerY = height / 2;
+  const centerY = height / 2 - 70; // adjust upward to make space
 
   for (let i = 0; i < heartCoords.length; i++) {
     let x = heartCoords[i].x + centerX;
@@ -89,13 +89,21 @@ class Particle {
     this.ty = y;
     this.size = 2 + Math.random() * 2;
     this.color = ["#ff77ff", "#77aaff", "#cc66ff"][Math.floor(Math.random() * 3)];
-    this.vx = (Math.random() - 0.5) * 10;
-    this.vy = (Math.random() - 0.5) * 10;
+    this.vx = (Math.random() - 0.5) * 2;
+    this.vy = (Math.random() - 0.5) * 2;
   }
 
   update() {
-    this.x += (this.tx - this.x) * 0.05;
-    this.y += (this.ty - this.y) * 0.05;
+    if (clicked < maxClick) {
+      this.x += this.vx;
+      this.y += this.vy;
+
+      if (this.x < 0 || this.x > width) this.vx *= -1;
+      if (this.y < 0 || this.y > height) this.vy *= -1;
+    } else {
+      this.x += (this.tx - this.x) * 0.07;
+      this.y += (this.ty - this.y) * 0.07;
+    }
   }
 
   draw(ctx) {
@@ -115,6 +123,11 @@ function animate() {
   requestAnimationFrame(animate);
 }
 animate();
+
+// 🌠 Default particles before clicks
+for (let i = 0; i < 400; i++) {
+  particles.push(new Particle(Math.random() * width, Math.random() * height));
+}
 
 canvas.addEventListener("click", () => {
   clicked++;
